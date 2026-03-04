@@ -28,8 +28,11 @@ const COLORS = [
 export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenProps) {
   const [phase, setPhase] = useState<"reveal" | "launch" | "done">("reveal");
   const [rocketY, setRocketY] = useState(0);
-  const [rocketSize, setRocketSize] = useState(1); // New state for size
+  const [rocketSize, setRocketSize] = useState(1);
+  const [sparkActive, setSparkActive] = useState(false);
+  const [confettiActive, setConfettiActive] = useState(false);
 
+  // Particles for rocket explosion
   const particles = useMemo<Particle[]>(() => {
     return Array.from({ length: 28 }, (_, i) => {
       const angle = (i / 28) * Math.PI * 2;
@@ -48,6 +51,7 @@ export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenPr
     });
   }, []);
 
+  // Confetti
   const confetti = useMemo(() => {
     return Array.from({ length: 18 }, (_, i) => ({
       id: i,
@@ -62,16 +66,18 @@ export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenPr
   const launchRocket = () => {
     setPhase("launch");
     setRocketY(-420);
-    setRocketSize(0.5); // Shrink the rocket
+    setRocketSize(0.5);
+    setSparkActive(true);
+    setConfettiActive(true);
   };
 
   useEffect(() => {
     if (phase === "launch") {
-      const t2 = setTimeout(() => {
+      const t = setTimeout(() => {
         setPhase("done");
         onDone();
-      }, 3200);
-      return () => clearTimeout(t2);
+      }, 3200); // match rocket animation duration
+      return () => clearTimeout(t);
     }
   }, [phase, onDone]);
 
@@ -90,41 +96,43 @@ export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenPr
         overflow: "hidden",
       }}
     >
-      {/* Star burst particles */}
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            position: "absolute",
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-            background: p.color,
-            animation: `sparkBurst ${p.duration}s ease-out ${p.delay}s forwards`,
-            opacity: 0,
-            ["--tx" as string]: `${p.tx}px`,
-            ["--ty" as string]: `${p.ty}px`,
-          }}
-        />
-      ))}
+      {/* Spark/Explosion Particles */}
+      {sparkActive &&
+        particles.map((p) => (
+          <div
+            key={p.id}
+            style={{
+              position: "absolute",
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              background: p.color,
+              animation: `sparkBurst ${p.duration}s ease-out ${p.delay}s forwards`,
+              opacity: 0,
+              ["--tx" as string]: `${p.tx}px`,
+              ["--ty" as string]: `${p.ty}px`,
+            }}
+          />
+        ))}
 
-      {/* Confetti rain */}
-      {confetti.map((c) => (
-        <div
-          key={c.id}
-          style={{
-            position: "absolute",
-            left: `${c.x}%`,
-            top: "-10px",
-            width: `${c.size}px`,
-            height: `${c.size}px`,
-            background: c.color,
-            animation: `confettiFall ${c.duration}s ease-in ${c.delay + 0.5}s forwards`,
-            opacity: 0,
-          }}
-        />
-      ))}
+      {/* Confetti */}
+      {confettiActive &&
+        confetti.map((c) => (
+          <div
+            key={c.id}
+            style={{
+              position: "absolute",
+              left: `${c.x}%`,
+              top: "-10px",
+              width: `${c.size}px`,
+              height: `${c.size}px`,
+              background: c.color,
+              animation: `confettiFall ${c.duration}s ease-in ${c.delay + 0.5}s forwards`,
+              opacity: 0,
+            }}
+          />
+        ))}
 
       {/* QUEST COMPLETE text */}
       <div
@@ -158,10 +166,10 @@ export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenPr
         </div>
       </div>
 
-      {/* Rocket launching */}
+      {/* Rocket */}
       <div
         style={{
-          transform: `translateY(${rocketY}px) scale(${rocketSize})`, // Apply scaling
+          transform: `translateY(${rocketY}px) scale(${rocketSize})`,
           transition:
             phase === "launch"
               ? "transform 2s cubic-bezier(0.2, 0.0, 0.8, 1.0)"
@@ -197,7 +205,7 @@ export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenPr
         </div>
       </div>
 
-      {/* Quest name reminder */}
+      {/* Quest name */}
       <div
         style={{
           position: "absolute",
@@ -216,7 +224,7 @@ export function CompletionScreen({ quest, xpGained, onDone }: CompletionScreenPr
         ✓ {quest.title}
       </div>
 
-      {/* Launch Button */}
+      {/* YEET button */}
       {phase === "reveal" && (
         <button
           onClick={launchRocket}
